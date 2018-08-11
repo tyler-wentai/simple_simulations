@@ -8,7 +8,7 @@
 #   burning, or charred. Once a tree has reached the    #
 #   charred state, it no longer possesses the ability   #
 #   to spread the fire to other neighboring trees.      #
-#   The simple simulation also can include fire         #
+#   This simple simulation also can include fire        #
 #   barriers to test for their efficacy.                #
 #                                                       # 
 #                                                       # 
