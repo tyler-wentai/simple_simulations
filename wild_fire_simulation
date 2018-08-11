@@ -1,0 +1,218 @@
+### ------------------------------------------------- ###
+#         Wild Fire Simulation [VERSION 1.0]            #
+#                                                       #
+#                                                       #
+#   Wild Fire Simulation [Version 1.0] simulates the    #
+#   evolution of a wild fire of only one type of tree   #
+#   that can exist in either three states: healthy,     #
+#   burning, or charred. Once a tree has reached the    #
+#   charred state, it no longer possesses the ability   #
+#   to spread the fire to other neighboring trees.      #
+#   The simple simulation also can include fire         #
+#   barriers to test for their efficacy.                #
+#                                                       # 
+#                                                       # 
+### ------------------------------------------------- ###
+
+
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+
+
+
+### ---------- Create the Enviroment ---------- ###
+
+class Enviroment(object):
+
+    grid_size = 85                      # number of vertices per side
+    x_max, x_min = 1, 0
+    y_max, y_min = 1, 0
+    dx = (x_max - x_min) / grid_size
+    dy = (y_max - y_min) / grid_size
+    state_list = [0,1,2]                # [charred, burning, healthy]           
+
+    def __init__(self):
+        self.enviroment_grid = [[0.,0.,0.30,0.,2.,200] for i in range(self.grid_size**2)]
+        # tree attributes: [   x position, 
+        #                      y position,
+        #                      combution likelihood parameter,
+        #                      fire transmission parameter,
+        #                      state,
+        #                      burning countdown   ]
+        
+        n = 0
+        for i in range(self.grid_size**2):
+            self.enviroment_grid[i][0] = n * self.dx
+            if ((i+1)%self.grid_size == 0) and (i != 0):
+                n += 1
+        
+        n = 0
+        for i in range(self.grid_size**2):
+            self.enviroment_grid[i][1] = n * self.dy
+            n += 1
+            if n == self.grid_size:
+                n = 0      
+        
+        ### --- Initial Conditions --- ###
+        #self.enviroment_grid[750][4] = 1                           # Fire start place 1
+        self.enviroment_grid[5500][4] = 1                           # Fire start place 2
+        # Barrier 
+        for i in range(self.grid_size):
+            self.enviroment_grid[i + 43*self.grid_size][4] = 3
+            self.enviroment_grid[i + 44*self.grid_size][4] = 3
+            self.enviroment_grid[i + 40*self.grid_size][4] = 3
+            self.enviroment_grid[i + 39*self.grid_size][4] = 3
+            if i % 10*self.grid_size == 0:
+                self.enviroment_grid[i + 43*self.grid_size][4] = 2
+                self.enviroment_grid[i + 44*self.grid_size][4] = 2
+            if (i+5) % 10*self.grid_size == 0:
+                self.enviroment_grid[i + 40*self.grid_size][4] = 2
+                self.enviroment_grid[i + 39*self.grid_size][4] = 2
+        
+    def display(self):
+        
+        x1, x2, x3, x4 = [], [], [], []
+        y1, y2, y3, y4 = [], [], [], []
+        
+        for i in range(self.grid_size**2):
+            if self.enviroment_grid[i][4] == 2:             # builds healthy (state = 2) trees
+                x1.append([self.enviroment_grid[i][0]])
+                y1.append([self.enviroment_grid[i][1]])
+            elif self.enviroment_grid[i][4] == 1:           # builds burning (state = 1) trees
+                x2.append([self.enviroment_grid[i][0]])
+                y2.append([self.enviroment_grid[i][1]])
+            elif self.enviroment_grid[i][4] == 0:           # builds charred (state = 0) trees
+                x3.append([self.enviroment_grid[i][0]])
+                y3.append([self.enviroment_grid[i][1]])     
+            elif self.enviroment_grid[i][4] == 3:           # builds fire (state = 3) barrier
+                x4.append([self.enviroment_grid[i][0]])
+                y4.append([self.enviroment_grid[i][1]])
+                
+        plt.plot(x1,y1,'o', markersize=1.5, color='g')
+        plt.plot(x2,y2,'o', markersize=1.5, color='r')
+        plt.plot(x3,y3,'o', markersize=1.5, color='black')
+        plt.plot(x4,y4,'o', markersize=1.5, color='brown')
+        
+        plt.xlim(self.x_min-self.dx, self.x_max+self.dx)
+        plt.ylim(self.y_min-self.dy, self.y_max+self.dy)
+        plt.axis('off')
+        plt.axes().set_aspect('equal')
+        plt.show()        
+        
+    def fire_progression(self):
+    
+        # 1: Calculate burn probabilities
+        potential_burn_list = [0. for i in range(self.grid_size**2)]
+        
+        for i in range(self.grid_size**2):
+        
+            if (    self.enviroment_grid[i][4] == 0 or
+                    self.enviroment_grid[i][4] == 1 or 
+                    self.enviroment_grid[i][4] == 3
+                    ):
+                continue 
+        
+            ### first test the four corners:
+            elif i == 0: # Bottom-Left Corner
+                if self.enviroment_grid[i+1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[self.grid_size] == 1:
+                    potential_burn_list[i] += 1
+            
+            elif i == (self.grid_size - 1): # Top-Left Corner
+                if self.enviroment_grid[i-1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[2*self.grid_size-1] == 1:
+                    potential_burn_list[i] += 1
+            
+            elif i == self.grid_size**2 - 1: # Top-Right Corner
+                if self.enviroment_grid[i-1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[i - self.grid_size] == 1:
+                    potential_burn_list[i] += 1
+            
+            elif i == self.grid_size**2 - self.grid_size: # Bottom-Right Corner
+                if self.enviroment_grid[i+1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[i - self.grid_size] == 1:
+                    potential_burn_list[i] += 1
+            
+            ### then, test the four edges:
+            elif i < self.grid_size: # left edge
+                if self.enviroment_grid[i+1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[i-1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[i+self.grid_size][4] == 1:
+                    potential_burn_list[i] +=1
+                    
+            elif i > self.grid_size**2 - self.grid_size - 1: # right edge
+                if self.enviroment_grid[i+1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[i-1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[i-self.grid_size][4] == 1:
+                    potential_burn_list[i] += 1
+            
+            elif i % self.grid_size - (self.grid_size - 1) == 0: # top edge
+                if self.enviroment_grid[i-1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[i+self.grid_size][4] == 1:
+                    potential_burn_list[i] +=1 
+                if self.enviroment_grid[i-self.grid_size][4] == 1:
+                    potential_burn_list[i] += 1
+            
+            elif i % self.grid_size == 0: # bottom edge
+                if self.enviroment_grid[i+1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[i+self.grid_size][4] == 1:
+                    potential_burn_list[i] +=1 
+                if self.enviroment_grid[i-self.grid_size][4] == 1:
+                    potential_burn_list[i] += 1
+            
+            ### lastly, the inners trees 
+            else: # inner  
+                if self.enviroment_grid[i+1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[i-1][4] == 1:
+                    potential_burn_list[i] += 1
+                if self.enviroment_grid[i+self.grid_size][4] == 1:
+                    potential_burn_list[i] += 1 
+                if self.enviroment_grid[i-self.grid_size][4] == 1:
+                    potential_burn_list[i] += 1
+        
+        # 2: Use probabilities to roll for new combustions        
+        for i in range(self.grid_size**2):
+            if potential_burn_list[i] != 0:
+                probability = potential_burn_list[i] * self.enviroment_grid[i][2]
+                dice_roll = random.randint(0, 100)
+                if dice_roll < probability:
+                    self.enviroment_grid[i][4] = 1
+        
+        # 3: Reduce time for burning plants
+        for i in range(self.grid_size**2):
+            if (self.enviroment_grid[i][4] == 1) and (self.enviroment_grid[i][5] != 0):
+                self.enviroment_grid[i][5] -= 1
+        
+        # 4: Check for any trees with burning countdown = 0 and then change state and combustion par to 0 (charred state)
+        for i in range(self.grid_size**2):
+            if self.enviroment_grid[i][5] == 0:
+                self.enviroment_grid[i][4] = 0
+                self.enviroment_grid[i][2] = 0      
+                
+
+### ---------- Run the Simulation ---------- ###        
+    
+forest = Enviroment()
+#forest.display()
+
+for i in range(5500):
+    forest.fire_progression()
+    if i % 500 == 0:
+        print('step: {a}' .format(a=i))
+        forest.display()
+
+
+
+
