@@ -1,9 +1,9 @@
 ### ------------------------------------------------- ###
-#         Wild Fire Simulation [VERSION 1.0]            #
+#         Wildfire Simulation [VERSION 1.0]             #
 #                                                       #
 #                                                       #
-#   Wild Fire Simulation [Version 1.0] simulates the    #
-#   evolution of a wild fire of only one type of tree   #
+#   Wilfire Simulation [Version 1.0] simulates the      #
+#   evolution of a wildfire of only one type of tree    #
 #   that can exist in either three states: healthy,     #
 #   burning, or charred. Once a tree has reached the    #
 #   charred state, it no longer possesses the ability   #
